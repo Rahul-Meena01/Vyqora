@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.log
+build_log.txt
+build_output.txt
+build_result.txt
+last_build.txt
+output.txt
