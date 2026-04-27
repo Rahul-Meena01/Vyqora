@@ -341,6 +341,7 @@ function Ico({
   );
 }
 const IC = {
+  menu: "M3 12h18M3 6h18M3 18h18",
   grid: "M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z",
   list: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
   chart: "M3 20l5-8 4 5 4-10 5 13",
@@ -394,7 +395,10 @@ export default function FinanceOS() {
   const [txns, setTxns] = useState(() => {
     try {
       const s = localStorage.getItem("fos_txns");
-      return s ? JSON.parse(s) : SAMPLE;
+      if (s) {
+        return JSON.parse(s).map(t => ({...t, amount: Number(t.amount) || 0}));
+      }
+      return SAMPLE;
     } catch {
       return SAMPLE;
     }
@@ -444,6 +448,19 @@ export default function FinanceOS() {
     type: "expense",
   });
   const chatEnd = useRef(null);
+
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) setSidebarOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     try {
@@ -1214,6 +1231,7 @@ export default function FinanceOS() {
       position: "relative",
       display: "flex",
       height: "100vh",
+      width: "100vw",
       background: T.bg,
       color: T.text,
       fontFamily: T.fontSans,
@@ -1221,7 +1239,20 @@ export default function FinanceOS() {
     },
 
     // Sidebar
-    sidebar: {
+    sidebar: isMobile ? {
+      position: "fixed",
+      left: sidebarOpen ? 0 : -280,
+      top: 0,
+      bottom: 0,
+      zIndex: 50,
+      width: 260,
+      background: T.surface,
+      borderRight: `1px solid ${T.border}`,
+      display: "flex",
+      flexDirection: "column",
+      transition: "left 0.3s ease",
+      boxShadow: sidebarOpen ? "4px 0 24px rgba(0,0,0,0.5)" : "none",
+    } : {
       width: 228,
       background: T.surface,
       borderRight: `1px solid ${T.border}`,
@@ -1326,13 +1357,13 @@ export default function FinanceOS() {
     // Cards
     grid4: {
       display: "grid",
-      gridTemplateColumns: "repeat(4,1fr)",
+      gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)",
       gap: 12,
       marginBottom: 18,
     },
     grid21: {
       display: "grid",
-      gridTemplateColumns: "1.6fr 1fr",
+      gridTemplateColumns: isMobile ? "1fr" : "1.6fr 1fr",
       gap: 12,
       marginBottom: 18,
     },
@@ -1606,9 +1637,16 @@ export default function FinanceOS() {
   return (
     <div style={css.root}>
       {/* ── SIDEBAR ── */}
+      {isMobile && sidebarOpen && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 40 }}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       <aside style={css.sidebar}>
-        <div style={css.logo}>
-          <div style={css.logoMark}>
+        <div style={{ ...css.logo, justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={css.logoMark}>
             <svg
               width="20"
               height="20"
@@ -1643,13 +1681,19 @@ export default function FinanceOS() {
             <div style={css.logoText}>Vyqora</div>
             <div style={css.logoSub}>Money Control Hub</div>
           </div>
+          </div>
+          {isMobile && (
+            <button style={css.iconBtn} onClick={() => setSidebarOpen(false)}>
+              <Ico d={IC.x} size={20} stroke={T.text} />
+            </button>
+          )}
         </div>
         <nav style={css.nav}>
           {views.map((v) => (
             <div
               key={v.id}
               style={css.navItem(view === v.id)}
-              onClick={() => setView(v.id)}
+              onClick={() => { setView(v.id); if (isMobile) setSidebarOpen(false); }}
             >
               <Ico d={v.icon} size={15} stroke="currentColor" />
               {v.label}
@@ -1669,9 +1713,15 @@ export default function FinanceOS() {
       {/* ── MAIN ── */}
       <main style={css.main}>
         {/* Topbar */}
-        <div style={css.topbar}>
-          <div>
-            <div style={css.viewTitle}>
+        <div style={{ ...css.topbar, gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {isMobile && (
+              <button style={css.iconBtn} onClick={() => setSidebarOpen(true)}>
+                <Ico d={IC.menu} size={20} stroke={T.text} />
+              </button>
+            )}
+            <div>
+              <div style={css.viewTitle}>
               {
                 {
                   dashboard: "Overview",
@@ -1688,6 +1738,7 @@ export default function FinanceOS() {
                 month: "long",
                 year: "numeric",
               })}
+            </div>
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -1730,7 +1781,7 @@ export default function FinanceOS() {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(4,1fr)",
+                      gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)",
                       gap: 10,
                     }}
                   >
@@ -2136,7 +2187,7 @@ export default function FinanceOS() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
                     gap: "4px 32px",
                   }}
                 >
@@ -2213,7 +2264,7 @@ export default function FinanceOS() {
                     paddingTop: 16,
                     borderTop: `1px solid ${T.border}`,
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr",
                     gap: 12,
                   }}
                 >
@@ -2511,7 +2562,7 @@ export default function FinanceOS() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
                 gap: 10,
               }}
             >
